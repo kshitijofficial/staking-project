@@ -37,7 +37,10 @@ contract Staking {
         uint256 rewardEndBlock;
     }
 
-    constructor(address initialOwner, TokenConfig memory tokenConfig, RewardConfig memory rewardConfig)
+    constructor(
+        address initialOwner, 
+        TokenConfig memory tokenConfig, 
+        RewardConfig memory rewardConfig)
         Ownable(initialOwner)
     {
         stakedToken = IERC20(tokenConfig.stakedToken);
@@ -53,6 +56,33 @@ contract Staking {
         PRECISION_FACTOR = 1e28;
 
         lastRewardBlock = rewardStartBlock;
+    }
+
+
+    function deposit() external {
+        _updatePoolRewards();
+        _payPendingRewards();
+        _increaseStake();
+    }
+
+    function _updatePoolRewards() internal {
+      
+         if(block.number<=lastRewardBlock){
+            return;
+         }
+         if(totalShareAmount==0){
+            return;
+         }
+         uint256 reward = rewardPerBlock*_getRewardBlockCount(lastRewardBlock,block.number);
+         accumulatedRewardPerShare+=reward*PRECISION_FACTOR/totalShareAmount;
+    }
+
+    function _payPendingRewards() internal{
+
+    }
+
+    function _increaseStake() internal{
+        
     }
 
 }
