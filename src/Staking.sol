@@ -60,29 +60,57 @@ contract Staking {
 
 
     function deposit() external {
+         UserInfo storage user = userInfo[msg.sender];
         _updatePoolRewards();
         _payPendingRewards();
-        _increaseStake();
+        _increaseStake(user,msg.sender,amount);
     }
 
     function _updatePoolRewards() internal {
-      
          if(block.number<=lastRewardBlock){
             return;
          }
          if(totalShareAmount==0){
+            lastRewardBlock = block.number;
             return;
-         }
+         } 
+
+         //lastRewardBlock - desposit/withdrwal 
+         //blcok.number - desposit/withdrwal                                                                     
          uint256 reward = rewardPerBlock*_getRewardBlockCount(lastRewardBlock,block.number);
          accumulatedRewardPerShare+=reward*PRECISION_FACTOR/totalShareAmount;
+         lastRewardBlock = block.number;
+    }
+     function _getRewardBlockCount(uint256 from,uint256 to) returns(uint256){
+         if(to<=rewardEndBlock){
+            return to-from;
+         }
+         else if(from>=rewardEndBlock){
+             return 0;
+         }else{
+            rewardEndBlock-from;
+         }
     }
 
     function _payPendingRewards() internal{
 
     }
 
-    function _increaseStake() internal{
-        
+    function _increaseStake(UserInfo storage user,address account,uint256 amount) internal{
+        if(amount==0){
+            return;
+        }
+        user.amount+=amount;
+        totalShareAmount+=amount;
+        stakedToken.safeTransferFrom(account,address(this),amount);
+
+    }
+
+     function withdraw() external {
+         UserInfo storage user = userInfo[msg.sender];
+        _updatePoolRewards();
+        _payPendingRewards();
+        _decreaseStake(user,msg.sender,amount);
     }
 
 }
