@@ -62,8 +62,10 @@ contract Staking {
     function deposit() external {
          UserInfo storage user = userInfo[msg.sender];
         _updatePoolRewards();
-        _payPendingRewards();
+        _payPendingRewards(user,msg.sender);
         _increaseStake(user,msg.sender,amount);
+
+         user.rewardPerSharePaid = (user.amount*accumulatedRewardPerShare)/PRECISION_FACTOR;
     }
 
     function _updatePoolRewards() internal {
@@ -73,10 +75,7 @@ contract Staking {
          if(totalShareAmount==0){
             lastRewardBlock = block.number;
             return;
-         } 
-
-         //lastRewardBlock - desposit/withdrwal 
-         //blcok.number - desposit/withdrwal                                                                     
+         }                                                                    
          uint256 reward = rewardPerBlock*_getRewardBlockCount(lastRewardBlock,block.number);
          accumulatedRewardPerShare+=reward*PRECISION_FACTOR/totalShareAmount;
          lastRewardBlock = block.number;
@@ -92,8 +91,15 @@ contract Staking {
          }
     }
 
-    function _payPendingRewards() internal{
+    function _payPendingRewards(UserInfo storage user,address account) internal{
+          if(user.amount==0){
+             return;
+          }
+          uint256 pendingReward = (user.amount*accumulatedRewardPerShare)/PRECISION_FACTOR - user.rewardPerSharePaid;
 
+          if(pendingReward>0){
+             rewardToken.safeTransfer(user,pendingReward);
+          }
     }
 
     function _increaseStake(UserInfo storage user,address account,uint256 amount) internal{
@@ -103,7 +109,6 @@ contract Staking {
         user.amount+=amount;
         totalShareAmount+=amount;
         stakedToken.safeTransferFrom(account,address(this),amount);
-
     }
 
      function withdraw() external {
@@ -112,5 +117,15 @@ contract Staking {
         _payPendingRewards();
         _decreaseStake(user,msg.sender,amount);
     }
+
+    function stopRewards() external onlyOwner {
+        rewardEndBlock = block.number;
+    }
+
+      function updateRewardPerBlock(uint256 newRewardPerBlock) external onlyOwner {
+        require(rewardStartBlock<newRewardPerBlock, "Staking has not started");
+        rewardPerBlock = newRewardPerBlock;
+    }
+
 
 }
