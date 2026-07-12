@@ -7,9 +7,9 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
-import {TokenConfig,RewardConfig} from "./Types.sol";
+import {TokenConfig, RewardConfig} from "./Types.sol";
 
-contract Staking is Ownable,ReentrancyGuard {
+contract Staking is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
     IERC20 private rewardToken;
     IERC20 private stakedToken;
@@ -102,7 +102,7 @@ contract Staking is Ownable,ReentrancyGuard {
     function withdraw(uint256 amount) external {
         UserInfo storage user = userInfo[msg.sender];
         _updatePoolRewards();
-       _payPendingRewards(user, msg.sender);
+        _payPendingRewards(user, msg.sender);
         _decreaseStake(user, msg.sender, amount);
     }
 
@@ -132,14 +132,13 @@ contract Staking is Ownable,ReentrancyGuard {
         rewardEndBlock = newRewardEndBlock;
     }
 
-  function withdrawWrongStakedTokens(
-        address _wrongTokenAddress, 
-        address _to, 
-        uint256 amount
-    ) external onlyOwner {
-        
-        require(_wrongTokenAddress!=address(stakedToken),"Cannot withdraw Staked Tokens");
-        require(_wrongTokenAddress!=address(rewardToken),"Cannot withdraw Rewared Tokens");
-        IERC20(_wrongTokenAddress).safeTransfer(_to, _amount);
+    function withdrawWrongStakedTokens(address wrongTokenAddress, address to, uint256 amount) external onlyOwner {
+        require(wrongTokenAddress != address(stakedToken), "Cannot withdraw Staked Tokens");
+        require(wrongTokenAddress != address(rewardToken), "Cannot withdraw Rewared Tokens");
+        IERC20(wrongTokenAddress).safeTransfer(to, amount);
+    }
+
+    function getTotalShareAmount() external view returns(uint256){
+        return totalShareAmount;
     }
 }
