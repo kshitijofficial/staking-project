@@ -5,12 +5,9 @@ import {Staking} from "./Staking.sol";
 import {TokenConfig,RewardConfig} from "./Types.sol";
 
 contract StakingPoolManager{
-    
-
-    Staking[] private stakings;
-
+    address[] private stakings;
     function createStakingPool(TokenConfig memory tokenConfig,RewardConfig memory rewardConfig) external {
           Staking staking =  new Staking(msg.sender,tokenConfig,rewardConfig);
-          stakings.push(staking);
+          stakings.push(address(staking));
     }
 }

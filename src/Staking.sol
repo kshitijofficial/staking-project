@@ -131,4 +131,15 @@ contract Staking is Ownable,ReentrancyGuard {
     function updateRewardEndBlock(uint256 newRewardEndBlock) external onlyOwner {
         rewardEndBlock = newRewardEndBlock;
     }
+
+  function withdrawWrongStakedTokens(
+        address _wrongTokenAddress, 
+        address _to, 
+        uint256 amount
+    ) external onlyOwner {
+        
+        require(_wrongTokenAddress!=address(stakedToken),"Cannot withdraw Staked Tokens");
+        require(_wrongTokenAddress!=address(rewardToken),"Cannot withdraw Rewared Tokens");
+        IERC20(_wrongTokenAddress).safeTransfer(_to, _amount);
+    }
 }
