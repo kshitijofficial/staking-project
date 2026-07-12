@@ -7,8 +7,9 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
+import {TokenConfig,RewardConfig} from "./Types.sol";
 
-contract Staking {
+contract Staking is Ownable,ReentrancyGuard {
     using SafeERC20 for IERC20;
     IERC20 private rewardToken;
     IERC20 private stakedToken;
@@ -26,18 +27,6 @@ contract Staking {
     struct UserInfo {
         uint256 amount;
         uint256 rewardPerSharePaid;
-    }
-
-    struct TokenConfig {
-        address stakedToken;
-        address rewardToken;
-        uint8 rewardTokenDecimals;
-    }
-
-    struct RewardConfig {
-        uint256 rewardPerBlock;
-        uint256 rewardStartBlock;
-        uint256 rewardEndBlock;
     }
 
     constructor(address initialOwner, TokenConfig memory tokenConfig, RewardConfig memory rewardConfig)
@@ -58,7 +47,7 @@ contract Staking {
         lastRewardBlock = rewardStartBlock;
     }
 
-    function deposit() external {
+    function deposit(uint256 amount) external {
         UserInfo storage user = userInfo[msg.sender];
         _updatePoolRewards();
         _payPendingRewards(user, msg.sender);
@@ -80,13 +69,13 @@ contract Staking {
         lastRewardBlock = block.number;
     }
 
-    function _getRewardBlockCount(uint256 from, uint256 to) returns (uint256) {
+    function _getRewardBlockCount(uint256 from, uint256 to) internal view returns (uint256) {
         if (to <= rewardEndBlock) {
             return to - from;
         } else if (from >= rewardEndBlock) {
             return 0;
         } else {
-            rewardEndBlock - from;
+            return rewardEndBlock - from;
         }
     }
 
@@ -97,7 +86,7 @@ contract Staking {
         uint256 pendingReward = (user.amount * accumulatedRewardPerShare) / PRECISION_FACTOR - user.rewardPerSharePaid;
 
         if (pendingReward > 0) {
-            rewardToken.safeTransfer(user, pendingReward);
+            rewardToken.safeTransfer(account, pendingReward);
         }
     }
 
@@ -110,10 +99,10 @@ contract Staking {
         stakedToken.safeTransferFrom(account, address(this), amount);
     }
 
-    function withdraw() external {
+    function withdraw(uint256 amount) external {
         UserInfo storage user = userInfo[msg.sender];
         _updatePoolRewards();
-        _payPendingRewards();
+       _payPendingRewards(user, msg.sender);
         _decreaseStake(user, msg.sender, amount);
     }
 
